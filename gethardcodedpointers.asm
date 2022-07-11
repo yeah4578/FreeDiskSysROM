@@ -60,12 +60,50 @@ API_ENTRYPOINT $e3ea
 GetHardCodedPointersWriteProtected:
     SEC
 GetHardCodedPointersImpl:
+    ldy #$01
+    tsx
+    sta $02
+    lda $103,x
+    sta $03
+    lda $104,x
+    sta $04
+@loadPointers:
+    lda ($03),y;load first 2 bytes
+    sta $00
+    iny
+    lda ($03),y
+    sta $01
+    bit $02
+    bpl @endLoadPointers;if A was greater than $80 (such as $ff)
+    iny                 ;load 2 more bytes
+    lda ($03),y
+    sta $02
+    iny
+    lda ($03),y
+    sta $03
+@endLoadPointers:
+    php
+    tya
+    clc
+    adc $103,x;correct return address to skip parameter bytes
+    bcc +
+    inc $104,x;increment only when there is overflow
++:
+    plp
+    inx
+    inx
+    stx $04
 
+    lda DRIVESTATUS
+    and #%00000001; bit 0 contains disk-set status
+    bne @error;a will be 1 if error, conveniently the needed error code
     BCC @end ; skip write-protect check if C is false
     LDA DRIVESTATUS
     AND #%00000100 ; bit 2 contains the write-protect status
     BEQ @end
-
-    ; error handling
+    lda WRITE_PROTECTED
+@error:
+    PLP;return to user program rather than function in case of error
+    PLP
 @end:
-	RTS
+    RTS
