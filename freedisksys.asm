@@ -154,13 +154,21 @@ AdjustFileCount:
 ; Returns: A = error #
 API_ENTRYPOINT $e301
 SetFileCount1:
-	RTS
+	tax
+	inx
+	txa
+	nop
 
 ; Set the file count to A
 ; Parameters: Pointer to Disk ID, A = file count
 ; Returns: A = error #
 API_ENTRYPOINT $e305
 SetFileCount:
+	tax
+	lda #$00
+	jsr GetHardCodedPointers;get a single pointer (disk ID)
+	jsr CheckDiskHeader;read disk header, the data we want is in block 2
+
 	RTS
 
 ; Fills provided DiskInfo structure with data read off the current disk.
@@ -266,7 +274,13 @@ XferDone:
 ; Returns: A = byte read from disk (if this is a read)
 API_ENTRYPOINT $e794
 Xfer1stByte:
-	RTS
+	ldx #$40
+	stx $101
+	asl $fa
+	sec
+	ror $fa
+	ldx $fa
+	stx $4025
 
 ; Waits for a byte to be transferred between the drive and the RAM adapter.
 ; Does not know or care whether it's a read or write. An interrupt is involved,
@@ -277,7 +291,8 @@ Xfer1stByte:
 ; Returns: A = byte read from disk (if this is a read)
 API_ENTRYPOINT $e7a3
 XferByte:
-	RTS
+	cli
+	jmp XferByte+1;infinite loop while waiting for interrupt
 
 ; VRAM Buffers
 ;  The structure of VRAM buffers are as follows:
