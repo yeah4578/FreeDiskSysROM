@@ -73,8 +73,8 @@ GetHardCodedPointersImpl:
     iny
     lda ($03),y
     sta $01
-    bit $02
-    bpl @endLoadPointers;if A was greater than $80 (such as $ff)
+    inc $02
+    bne @endLoadPointers;if A was $ff
     iny                 ;load 2 more bytes
     lda ($03),y
     sta $02
