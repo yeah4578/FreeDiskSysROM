@@ -274,13 +274,14 @@ XferDone:
 ; Returns: A = byte read from disk (if this is a read)
 API_ENTRYPOINT $e794
 Xfer1stByte:
-	ldx #$40
-	stx $101
-	asl $fa
-	sec
-	ror $fa
-	ldx $fa
-	stx $4025
+	tax
+	lda #$40
+	sta $101
+	asl a
+	ora $fa
+	sta $fa
+	sta $4025
+	txa
 
 ; Waits for a byte to be transferred between the drive and the RAM adapter.
 ; Does not know or care whether it's a read or write. An interrupt is involved,
