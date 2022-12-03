@@ -213,6 +213,46 @@ SetNumFiles:
 ; Parameters: Pointer to FileID list at $02
 API_ENTRYPOINT $e4a0
 FileMatchTest:
+	JSR Xfer1stByte
+	JSR XferByte; get file id
+	STA $09;let $09 be file ID until load is decided
+
+	LDA #$08
+	STA $101;skip 8 bytes (the file name)
+	CLI
+
+	LDY #$00
+@loop:
+	LDA ($02),Y
+	CMP #$ff
+	BEQ @endlist
+	CMP $09
+	BEQ @load
+	INY
+	CPY #20
+	BNE @loop
+
+@endlist:
+	TYA
+	BNE @noload
+
+@boot:
+	LDA $08
+	CMP $09
+	BCC @noload
+@load:
+	INC $0e
+	LDA #$00
+	BEQ @end
+@noload:
+	LDA #$ff
+@end:
+	STA $09
+
+@waitforskip:
+	LDA $101
+	BNE @waitforskip
+
 	RTS
 
 ; Skips over specified number of files.
