@@ -261,13 +261,59 @@ API_ENTRYPOINT $e4da
 SkipFiles:
 	RTS
 
+;load if $09 is 0, otherwise skip
 API_ENTRYPOINT $e4f9
 LoadData:
-	RTS
+	LDY #$00
+@setupLoop:
+	JSR Xfer1stByte
+	STA $0a,y
+	INY
+	CPY #$04
+	BNE @setupLoop
 
 API_ENTRYPOINT $e506
 ReadData:
+	JSR XferByte
+	STA #$05
+	BEQ @notVram
+	BIT $09
+	BMI @notVram;if dummy read, don't set up PPU for write
+	JSR DisPFObj
+	LDA $2002;reset PPU data latch
+	LDA $0b
+	STA PPUADDR
+	LDA $0a
+	STA PPUADDR
+	LDA #$20
+	STA $0b
+	LDA #$07
+	STA $0a
+@notVram:
+	JSR EndOfBlockRead
+	LDA #$04
+	JSR CheckBlockType
+	LDY #$00
+@loopDec0C:
+	JSR DecPtr0C;decrement before loop to prevent off-by-one
+	BCC @endloop;because eof is determined by underflow
+@loop:
+	JSR Xfer1stByte
+	BIT $09
+	BMI @loopDec0C;if $09 is $ff, don't store data
+	LDY $05
+	BEQ @storePRG
+	STA $2007
+	BNE @loopDec0C
+@storePRG:
+	STA ($0a),y
+	JSR Inc0ADec0C
+	BCS @loop
+@endloop:
+	JSR EndOfBlockRead
 	RTS
+
+API_ENTRYPOINT $e583
 
 API_ENTRYPOINT $e5b5
 SaveData:
@@ -310,18 +356,18 @@ XferDone:
 ; but the stack is manipulated in the ISR such that control returns to the
 ; caller of this function as if it were a simple subroutine.
 ; Parameters: A = byte to write to disk (if this is a write)
-; Affects: X, $101, $FA
+; Affects: $101, $FA
 ; Returns: A = byte read from disk (if this is a read)
 API_ENTRYPOINT $e794
 Xfer1stByte:
-	tax
+	pha
 	lda #$40
 	sta $101
 	asl a
 	ora $fa
 	sta $fa
 	sta $4025
-	txa
+	pla
 
 ; Waits for a byte to be transferred between the drive and the RAM adapter.
 ; Does not know or care whether it's a read or write. An interrupt is involved,
@@ -334,6 +380,21 @@ API_ENTRYPOINT $e7a3
 XferByte:
 	cli
 	jmp XferByte+1;infinite loop while waiting for interrupt
+
+API_ENTRYPOINT $e7a7
+Inc0ADec0C:
+	INC $0a
+	BNE DecPtr0C
+	INC $0b
+DecPtr0C:
+	LDA $0c
+	SEC
+	SBC #$01
+	STA $0c
+	LDA $0d
+	SBC #$00
+	STA $0d
+	RTS
 
 ; VRAM Buffers
 ;  The structure of VRAM buffers are as follows:
