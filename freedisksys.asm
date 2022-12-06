@@ -191,6 +191,39 @@ INCLUDE gethardcodedpointers.asm
 ; Parameters: Pointer to 10 byte string at $00
 API_ENTRYPOINT $e445
 CheckDiskHeader:
+	JSR StartXfer
+	LDY #$ff
+@loop:
+	INY
+	CPY #10
+	BCS @endLoop
+	JSR XferByte
+	CMP ($00),y
+	BEQ @loop
+	LDA ($00),y
+	CMP #$FF
+	BEQ @loop
+	;failed comparison
+	INY
+	TYA
+	CMP #$06
+	BCS @errorCode
+	ADC #$03
+	CMP #$05
+	BCC @errorCode
+	LDA #$05
+@errorCode:
+	TAX
+	JSR $E77F
+@endLoop:
+	JSR XferByte;get boot file ID
+	STA $08
+	LDY #30
+@waitforskip:
+	JSR XferByte
+	DEY
+	BNE @waitforskip
+	JSR EndOfBlockRead
 	RTS
 
 ; Reads number of files stored on disk, stores the result in $06
