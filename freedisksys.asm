@@ -109,6 +109,25 @@ INCLUDE irq.asm
 ; Returns: A = error #, Y = # of files loaded
 API_ENTRYPOINT $e1f8
 LoadFiles:
+	LDA #$00
+	STA $0e
+	LDA #$ff
+	JSR GetHardCodedPointers
+	LDA $101
+	PHA
+	JSR CheckDiskHeader
+	JSR GetNumFiles
+	JSR EndOfBlockRead
+@FileLoop:
+	LDA #$03
+	JSR CheckBlockType
+	JSR FileMatchTest
+	JSR LoadData
+	DEC $06
+	BNE @FileLoop
+	PLA
+	STA $101
+	JSR XferDone
 	RTS
 
 ; Appends the file data given by DiskID to the disk. This means that the file
