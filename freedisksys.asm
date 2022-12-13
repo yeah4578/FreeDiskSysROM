@@ -426,11 +426,29 @@ CheckBlockType:
 
 API_ENTRYPOINT $e6b0
 WriteBlockType:
-	RTS
 
+
+API_ENTRYPOINT $e6e3-14
+FDSString:
+	.byte "*CVH-ODNETNIN*"
 API_ENTRYPOINT $e6e3
 StartXfer:
+	JSR WaitForDriveReady
+	LDY #$00
+	JSR Delayms
+	LDA #$01
+	JSR CheckBlockType
+	LDY #13;length of FDS string
+@loop:
+	JSR Xfer1stByte
+	CMP FDSString,y
+	BPL @error
+	DEY
+	BNE @loop
 	RTS
+@error:
+	LDA #$20
+	JSR ErrorOccurred
 
 API_ENTRYPOINT $e706
 EndOfBlockRead:
@@ -645,6 +663,10 @@ unk_EC22:
 
 API_ENTRYPOINT $ee17
 StartMotor:
+	ORA #$01
+	AND #$2D
+	STA ZP_FDSCTRL
+	STA FDSCTRL
 	RTS
 
 ; private functions
