@@ -248,6 +248,11 @@ CheckDiskHeader:
 ; Reads number of files stored on disk, stores the result in $06
 API_ENTRYPOINT $e484
 GetNumFiles:
+	LDA #$02
+	JSR CheckBlockType
+	JSR XferByte
+	STA $06
+	JSR EndOfBlockRead
 	RTS
 
 ; Writes new number of files to disk header.
@@ -381,6 +386,21 @@ StopMotor:
 
 API_ENTRYPOINT $e68f
 CheckBlockType:
+	STA $07
+	LDY #$05
+	JSR Delayms;wait 5ms to avoid any bits near the start of the gap that may be set in error
+	LDA ZP_FDSCTRL
+	ORA #$40
+	STA ZP_FDSCTRL
+	STA FDSCTRL
+	JSR Xfer1stByte
+	CMP $07
+	BEQ @end
+	CLC
+	LDA $07
+	ADC #$21
+	JSR $E77F
+@end:
 	RTS
 
 API_ENTRYPOINT $e6b0
