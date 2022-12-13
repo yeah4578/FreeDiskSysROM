@@ -378,10 +378,31 @@ SaveData:
 
 API_ENTRYPOINT $e64d
 WaitForDriveReady:
+	JSR StopMotor
+	LDY #$00
+	JSR Delayms
+	JSR Delayms
+	JSR StartMotor
+	BIT EXTCONNRD
+	BMI @wait
+	LDA #$02
+	JSR ErrorOccurred
+@wait:
+	LDA DRIVESTATUS
+	AND #$01
+	JSR ErrorNotZero
+	LDA EXTCONNRD
+	LDA DRIVESTATUS
+	AND #$02
+	BNE @wait
 	RTS
 
 API_ENTRYPOINT $e685
 StopMotor:
+	LDA ZP_FDSCTRL
+	ORA #$02
+	AND #$2e
+	STA FDSCTRL
 	RTS
 
 API_ENTRYPOINT $e68f
@@ -421,6 +442,14 @@ EndOfBlkWrite:
 
 API_ENTRYPOINT $e778
 XferDone:
+	RTS
+
+API_ENTRYPOINT $e77f
+ErrorNotZero:
+	RTS
+
+API_ENTRYPOINT $e786
+ErrorOccurred:
 	RTS
 
 ; Waits for the first byte to be transferred between the drive and RAM adapter.
