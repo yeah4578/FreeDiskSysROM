@@ -452,7 +452,20 @@ StartXfer:
 
 API_ENTRYPOINT $e706
 EndOfBlockRead:
+	JSR XferByte
+	JSR XferByte
+	LDA #$28
+	BIT DISKSTATUS
+	BVS @error
+	LDA DISKSTATUS
+	AND #$10
+	BNE @CRCerror
+	JSR XferDone
 	RTS
+@CRCerror:
+	LDA #$27
+@error:
+	JSR ErrorOccurred
 
 API_ENTRYPOINT $e729
 EndOfBlkWrite:
