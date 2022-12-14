@@ -117,7 +117,6 @@ LoadFiles:
 	PHA
 	JSR CheckDiskHeader
 	JSR GetNumFiles
-	JSR EndOfBlockRead
 @FileLoop:
 	LDA #$03
 	JSR CheckBlockType
@@ -442,9 +441,9 @@ StartXfer:
 @loop:
 	JSR Xfer1stByte
 	CMP FDSString,y
-	BPL @error
+	BNE @error
 	DEY
-	BNE @loop
+	BPL @loop
 	RTS
 @error:
 	LDA #$20

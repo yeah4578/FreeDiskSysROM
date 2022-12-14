@@ -86,6 +86,7 @@ GetHardCodedPointersImpl:
     tya
     clc
     adc $103,x;correct return address to skip parameter bytes
+    sta $103,x
     bcc +
     inc $104,x;increment only when there is overflow
 +:
