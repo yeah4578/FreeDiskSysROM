@@ -473,14 +473,26 @@ EndOfBlkWrite:
 
 API_ENTRYPOINT $e778
 XferDone:
-	RTS
+	LDA #$00
+	BEQ EndRead
 
 API_ENTRYPOINT $e77f
 ErrorNotZero:
+	BNE ErrorOccurred
 	RTS
-
-API_ENTRYPOINT $e786
 ErrorOccurred:
+	LDX $04
+	TXS
+	NOP
+API_ENTRYPOINT $e786
+EndRead:
+	PHA
+	LDA ZP_FDSCTRL
+	AND #$2F
+	STA ZP_FDSCTRL
+	STA FDSCTRL
+	PLA
+	CLI
 	RTS
 
 ; Waits for the first byte to be transferred between the drive and RAM adapter.
