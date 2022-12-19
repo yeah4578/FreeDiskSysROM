@@ -24,10 +24,10 @@ API_ENTRYPOINT $ea84
 VRAMFill:
     STY $02 ; preserve Y so it can be restored later
 	; every write to PPUADDR needs to ensure that the PPUADDR latch is clear
-	; one nice feature of TOP is that it reads without clobbering anything
-	TOP PPUSTATUS
+	BIT PPUSTATUS
 	; set the address
 	STA PPUADDR
+	PHA
 	LDA #0
 	STA PPUADDR
 	; set the correct VRAM increment mode of 1
@@ -36,6 +36,7 @@ VRAMFill:
 	STA PPUCTRL
 	STA ZP_PPUCTRL
 	; pattern or nametable fill?
+	PLA
 	CMP #$20
 	BCS @VramNametableFill
 @VramPatternFill:
