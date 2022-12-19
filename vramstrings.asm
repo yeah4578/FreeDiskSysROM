@@ -21,7 +21,7 @@ API_ENTRYPOINT $e8d2
 PrepareVRAMString:
     STA $02
     STX $03
-    STY $05
+    STY $04
     JSR FetchDirectPtr
     LDY #0
     LDA #1
@@ -41,17 +41,17 @@ PrepareVRAMStrings:
     LDY #0
     LDA #$0F ; width
     AND ($00),Y
-    STA $05
+    STA $04
     LDA ($00),Y ; get the first byte of the data, which indicates the width and height
     INY ; Y is the read index
     LSR ; Shift the upper nibble 4 bits into the lower nibble
     LSR
     LSR
     LSR
-    ; for (row = $04; row > 0; row--)
-    ; $04 holds # of rows to go
+    ; for (row = $05; row > 0; row--)
+    ; $05 holds # of rows to go
 PrepareVRAMStringsGeneric:
-    STA $04  ; store the height
+    STA $05  ; store the height
     LDX $301 ; X is the write index
 @buffer:
     ; write destination address (BIG ENDIAN)
@@ -67,7 +67,7 @@ PrepareVRAMStringsGeneric:
     BCC @writeLength
     INC $02
 @writeLength:
-    LDA $05
+    LDA $04
     STA $302,X
     JSR IncrementWriteIndex
     STA $06
@@ -78,7 +78,7 @@ PrepareVRAMStringsGeneric:
     JSR IncrementWriteIndex
     DEC $06
     BNE @writeString ; reached the end of this string?
-    DEC $04
+    DEC $05
     BNE @buffer ; reached the end of the strings?
     LDA #$FF ; no error
     STA $302,X ; write end opcode to write buffer
