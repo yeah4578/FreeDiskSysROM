@@ -25,7 +25,7 @@ PrepareVRAMString:
     JSR FetchDirectPtr
     LDY #0
     LDA #1
-    BEQ PrepareVRAMStringsGeneric
+    BNE PrepareVRAMStringsGeneric
 
 ; Copy a 2D string into the VRAM buffer. The first byte of the data determines
 ; the width and height of the following string (in tiles):
