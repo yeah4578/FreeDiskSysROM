@@ -37,6 +37,15 @@ RESET:
     ; disable disk I/O and IRQs
     STY IRQCTRL
     STY MASTERIO
+    ; enable disk I/O
+    LDA #$83
+    STA MASTERIO
+
+    LDA #$40
+    STA $4015;disable audio
+    STA $4017;disable frame interrupt
+
+
 
     ; the PPU takes a while to warm up. Wait for at least 2 VBlanks before
     ; trying to set the scroll registers
@@ -63,11 +72,7 @@ RESET:
 
     LDA #$FF
     STA ZP_EXTCONN
-
-    ; ready, now we can turn on NMIs
-    LDA #$80
-    STA ZP_PPUCTRL
-    STA PPUCTRL
+    STA EXTCONNWR
 
     ; prepare the VRAM buffer
     LDA #$7D ; initial write buffer found at $302-$37F
@@ -76,3 +81,129 @@ RESET:
     STA $301
     LDA #$80 ; "end" opcode for the write buffer
     STA $302
+
+    LDA #$04; 1BPP using colors 0 and 1
+    LDY #$00; to VRAM $0000
+    LDX #40 ; load 40 characters
+    JSR LoadTileset
+    .word $E000
+
+    LDA #$20; VRAM $[20]00
+    LDX #$24; space
+    LDY #$00; attribute 0
+    JSR VRAMFill; fill the nametable with spaces
+
+    LDA #$3F
+    STA PPUADDR
+    LDY #$00
+    STY PPUADDR
+@paletteLoop:
+    LDA Palette,y
+    STA PPUDATA
+    INY
+    CPY #$04
+    BNE @paletteLoop
+
+@prepareInsertDiskStr:
+    LDA #$21
+    LDX #$C9
+    LDY #12
+    JSR PrepareVRAMString; "INSERT DISK"
+    .word InsertDiskStr
+
+    JSR EnPF
+@LoadInsertedDisk:
+    JSR VINTWait
+    JSR WriteVRAMBuffers
+    JSR SetScroll
+    LDA DRIVESTATUS
+    AND #$01
+    BNE @LoadInsertedDisk
+
+    LDA #$21
+    LDX #$C9
+    LDY #12
+    JSR PrepareVRAMString; "LOADING"
+    .word LoadingStr
+    JSR VINTWait
+    JSR WriteVRAMBuffers
+    JSR SetScroll
+
+    JSR LoadFiles
+    .word BootList
+    .word BootList
+    BNE @printErrorCode
+    LDA #$35; game is loaded
+    STA $102
+    LDA #$AC; first boot
+    STA $103
+
+    LDA #$80
+    STA $101
+    STA ZP_PPUCTRL
+    STA PPUCTRL
+
+    LDA #$C0
+    STA $100
+
+    JMP (DISK_RESET_VEC)
+
+
+
+@printErrorCode:
+    TAX
+
+    AND #$0f
+    STA $0f; separate the nibbles of the error code to be printed
+    TXA
+    LSR A
+    LSR A
+    LSR A
+    LSR A
+    STA $0e
+
+
+    LDA #$21
+    LDX #$C9
+    LDY #10
+    JSR PrepareVRAMString; "ERROR NO."
+    .word ErrorStr
+
+    LDA #$21
+    LDX #$D3
+    LDY #$02
+    JSR PrepareVRAMString; print the error code
+    .word $000e
+@errorLoop:
+    JSR VINTWait
+    JSR WriteVRAMBuffers
+    JSR SetScroll
+    LDA DRIVESTATUS
+    AND #$01
+    BEQ @errorLoop
+
+    JSR DisPF
+    LDA #$20
+    LDX #$24
+    LDY #$00
+    JSR VRAMFill
+    JSR EnPF
+
+    JMP @prepareInsertDiskStr
+
+
+
+Palette:
+    .byte $0F,$30,$10,$00
+
+InsertDiskStr:
+    .byte $12,$17,$1c,$0e,$1b,$1d,$24,$0d,$12,$1c,$14,$24;"INSERT DISK "
+LoadingStr:
+    .byte $24,$24,$15,$18,$0a,$0d,$12,$17,$10,$24,$24,$24;"  LOADING   "
+ErrorStr:
+    .byte $0e,$1b,$1b,$18,$1b,$24,$17,$18,$26,$24;"ERROR NO. "
+StrEnd:
+BootList:
+    .byte $ff,$ff,$ff,$ff,$ff,$ff
+    .byte $00,$00
+    .byte $ff,$ff
