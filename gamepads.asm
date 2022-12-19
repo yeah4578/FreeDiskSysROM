@@ -35,14 +35,14 @@ ReadPads:
 @loop:
 	LDA JOYPAD1
 	LSR A ; if bit 0 was a 1, the carry flag will be set
-	ROR $F5 ; rotate the carry flag's value into $F5, where the joypad #1 data lives
+	ROL $F5 ; rotate the carry flag's value into $F5, where the joypad #1 data lives
 	LSR A ; bit 0 was already shifted out, now shift bit 1 into the carry flag
-	ROR $00 ; rotate the carry flag's value into $00, where the expansion #1 data lives
+	ROL $00 ; rotate the carry flag's value into $00, where the expansion #1 data lives
 	LDA JOYPAD2
 	LSR A ; if bit 0 was a 1, the carry flag will be set
-	ROR $F6 ; rotate the carry flag's value into $F6, where the joypad #2 data lives
+	ROL $F6 ; rotate the carry flag's value into $F6, where the joypad #2 data lives
 	LSR A ; bit 0 was already shifted out, now shift bit 1 into the carry flag
-	ROR $01 ; rotate the carry flag's value into $01, where the expansion #2 data lives
+	ROL $01 ; rotate the carry flag's value into $01, where the expansion #2 data lives
 	DEX
 	BNE @loop
 	RTS
