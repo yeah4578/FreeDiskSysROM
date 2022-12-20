@@ -551,6 +551,23 @@ CheckBlockType:
 
 API_ENTRYPOINT $e6b0
 WriteBlockType:
+	PHA
+	LDA ZP_FDSCTRL
+	AND #$2B
+	STA ZP_FDSCTRL
+	STA FDSCTRL
+	LDY #$0a
+	JSR Delayms;wait 10ms to make lots of space between the files
+	LDA #$80
+	STA WRITEDATA;write the wake-up bit
+	LDA ZP_FDSCTRL
+	ORA #$40
+	STA ZP_FDSCTRL
+	STA FDSCTRL
+	PLA
+	JSR Xfer1stByte
+	RTS
+
 
 
 API_ENTRYPOINT $e6e3-14
