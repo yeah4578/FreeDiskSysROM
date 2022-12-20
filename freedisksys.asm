@@ -138,7 +138,7 @@ LoadFiles:
 ; Returns: A = error #
 API_ENTRYPOINT $e237
 AppendFile:
-	RTS
+	LDA #$ff
 
 ; Same as "Append File", but instead of writing the file to the end of the
 ; disk, A specifies the sequential position on the disk to write the file (0
@@ -149,6 +149,53 @@ AppendFile:
 ; Returns: A = error #
 API_ENTRYPOINT $e239
 WriteFile:
+	STA $05
+	LDA #$ff
+	JSR GetHardCodedPointers
+	LDA $101
+	PHA
+
+	JSR CheckDiskHeader;write data pass
+	JSR GetNumFiles
+	LDA $05
+	CMP #$ff
+	BEQ @WdoneNumFiles
+	STA $06
+@WdoneNumFiles:
+	JSR SkipFiles
+	LDA #$03
+	JSR WriteBlockType
+	LDA #$00
+	JSR SaveData;write the file to disk
+	JSR XferDone
+
+	JSR CheckDiskHeader;verify write pass
+	JSR GetNumFiles
+	LDA $05
+	CMP #$ff
+	BNE @VstoreNum
+	LDA $06
+	STA $05
+	INC $05
+@VstoreNum:
+	STA $06
+@VdoneNumFiles:
+	JSR SkipFiles
+	LDA #$03
+	JSR CheckBlockType
+	LDA #$FF
+	JSR SaveData;verify written data
+	BNE @end;if verification fails, return without updating file count
+	JSR XferDone
+
+	JSR CheckDiskHeader;adjust file count pass
+	LDA $05
+	JSR SetNumFiles
+	JSR XferDone
+@end:
+	PLA
+	STA $101
+	JSR XferDone
 	RTS
 
 ; Reads in disk's file count, compares it to A, then sets the disk's file count
