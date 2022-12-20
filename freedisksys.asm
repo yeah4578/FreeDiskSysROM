@@ -498,7 +498,7 @@ SaveData:
 
 @errorH:
 @errorF:
-	LDA #$00
+	LDA #$ff
 	RTS
 
 API_ENTRYPOINT $e64d
