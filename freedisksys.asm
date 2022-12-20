@@ -305,6 +305,12 @@ GetNumFiles:
 ; Parameters: A = number of files
 API_ENTRYPOINT $e492
 SetNumFiles:
+	PHA
+	LDA #$02
+	JSR WriteBlockType
+	PLA
+	JSR XferByte
+	JSR EndOfBlkWrite
 	RTS
 
 ; Uses a byte string pointed at by Ptr($02) to tell the disk system which files
