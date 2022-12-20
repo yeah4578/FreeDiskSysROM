@@ -369,10 +369,83 @@ ReadData:
 	JSR EndOfBlockRead
 	RTS
 
-API_ENTRYPOINT $e583
-
 API_ENTRYPOINT $e5b5
 SaveData:
+	TAX
+	LDY #$0b
+	LDA ($02),y;get file size
+	STA $0c
+	INY
+	LDA ($02),y
+	STA $0d
+	LDY #$0e
+	LDA ($02),y;get file address
+	STA $0a
+	INY
+	LDA ($02),y
+	STA $0b
+	INY
+	LDA ($02),y;get file location (RAM/VRAM)
+	STA $0e; 0 means CPU RAM
+	BEQ @begin
+	JSR DisPFObj
+	BIT PPUADDR
+	LDY $0b
+	STY PPUADDR
+	LDY $0a
+	STY PPUADDR
+@begin:
+	INX
+	BEQ @verifyData
+	LDY #$00
+@saveLoop:
+	LDA $0e
+	BEQ @RAMSource
+	LDA PPUDATA
+	JMP @save
+@RAMSource:
+	LDA ($0a),y
+@save:
+	JSR Xfer1stByte
+	JSR Inc0ADec0C
+	BCS @saveLoop
+	RTS
+
+
+
+
+@verifyData:
+	LDY #$00
+@verifyHeaderLoop:
+	JSR Xfer1stByte
+	CMP ($02),y
+	BNE @errorH
+	INY
+	CPY #$0e
+	BCC @verifyHeaderLoop
+	;
+
+	LDA #$04
+	JSR CheckBlockType
+	LDY #$00
+@verifyFileLoop:
+	JSR Xfer1stByte
+	LDX $0e
+	BEQ @WRAMCompare
+	CMP PPUDATA
+	BNE @errorF
+	BEQ @continue
+@WRAMCompare:
+	CMP ($0a),y
+	BNE @errorF
+@continue:
+	JSR Inc0ADec0C
+	BCS @verifyFileLoop
+	RTS
+
+@errorH:
+@errorF:
+	LDA #$00
 	RTS
 
 API_ENTRYPOINT $e64d
